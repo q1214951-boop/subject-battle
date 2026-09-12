@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>三角函數大對決 - 高中數學雙人線上競賽</title>
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <!-- MathJax for rendering math formulas -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); color: #f8fafc; }
+
+    /* Signature */
+    .author-tag { position: fixed; top: 12px; right: 16px; font-size: 13px; color: rgba(255, 255, 255, 0.6); z-index: 9999; font-weight: bold; letter-spacing: 1px; }
+
+    /* Portrait Notice Overlay */
+    #portrait-notice { display: none; position: fixed; inset: 0; background: #0f172a; z-index: 9000; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
+    #portrait-notice .rotate-icon { font-size: 64px; animation: rotateAnim 2s infinite ease-in-out; margin-bottom: 20px; }
+    @keyframes rotateAnim { 0% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } 100% { transform: rotate(0deg); } }
+
+    @media screen and (orientation: portrait) and (max-width: 900px) {
+      #portrait-notice { display: flex; }
+    }
+
+    /* Screen Management */
+    .screen { display: none; width: 100vw; height: 100vh; padding: 20px; flex-direction: column; align-items: center; justify-content: center; position: absolute; inset: 0; }
+    .screen.active { display: flex; }
+
+    /* UI Components */
+    .card { background: rgba(30, 41, 59, 0.85); border: 2px solid rgba(99, 102, 241, 0.3); backdrop-filter: blur(12px); border-radius: 20px; padding: 28px; width: 100%; max-width: 500px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); text-align: center; }
+    h1 { font-size: 32px; margin-bottom: 8px; color: #38bdf8; text-shadow: 0 0 12px rgba(56, 189, 248, 0.4); }
+    p.subtitle { color: #94a3b8; margin-bottom: 24px; font-size: 15px; }
+
+    input[type="text"] { width: 100%; padding: 14px 18px; border-radius: 12px; border: 2px solid #334155; background: #0f172a; color: #fff; font-size: 16px; margin-bottom: 20px; outline: none; transition: 0.2s; }
+    input[type="text"]:focus { border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 14px 24px; border-radius: 12px; border: none; font-size: 18px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; color: white; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4); }
+    .btn:hover { transform: translateY(-2deg); box-shadow: 0 6px 16px rgba(79, 70, 229, 0.6); }
+    .btn:active { transform: translateY(0); }
+    .btn-secondary { background: linear-gradient(135deg, #475569 0%, #334155 100%); box-shadow: none; margin-top: 12px; }
+    .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4); }
+
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 6px 12px; border-radius: 20px; background: rgba(15, 23, 42, 0.6); color: #38bdf8; margin-top: 16px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+
+    /* Lobby */
+    .lobby-header { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .room-list { width: 100%; max-width: 800px; height: 60vh; overflow-y: auto; background: rgba(15, 23, 42, 0.6); border-radius: 16px; border: 1px solid #334155; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .room-card { display: flex; justify-content: space-between; align-items: center; background: rgba(30, 41, 59, 0.9); padding: 16px 20px; border-radius: 12px; border: 1px solid #475569; }
+    .room-info { text-align: left; }
+    .room-host { font-size: 18px; font-weight: bold; color: #f8fafc; }
+    .room-status { font-size: 13px; color: #38bdf8; }
+    .btn-sm { width: auto; padding: 8px 18px; font-size: 15px; }
+
+    /* Waiting Room */
+    .loader { border: 4px solid rgba(255,255,255,0.1); border-left-color: #38bdf8; border-radius: 50%; width: 48px; height: 48px; animation: spin 1s linear infinite; margin: 24px auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* Battle Screen */
+    #screen-battle { padding: 10px 20px; justify-content: space-between; }
+    .hud { width: 100%; max-width: 1000px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: center; background: rgba(30, 41, 59, 0.9); padding: 12px 24px; border-radius: 16px; border: 1px solid #475569; }
+    .player-hud { display: flex; align-items: center; gap: 12px; }
+    .player-hud.right { flex-direction: row-reverse; text-align: right; }
+    .avatar { font-size: 36px; background: #0f172a; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 2px solid #38bdf8; }
+    .player-meta { flex-direction: column; display: flex; }
+    .player-name { font-size: 16px; font-weight: bold; color: #f8fafc; }
+    .hp-bar { width: 140px; height: 16px; background: #0f172a; border-radius: 8px; overflow: hidden; border: 1px solid #334155; margin-top: 4px; }
+    .hp-fill { height: 100%; background: linear-gradient(90deg, #ef4444, #22c55e); width: 100%; transition: width 0.3s ease; }
+    .vs-badge { font-size: 20px; font-weight: 900; color: #f59e0b; font-style: italic; }
+
+    .battle-area { width: 100%; max-width: 900px; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; margin: 10px 0; position: relative; }
+    .question-box { width: 100%; background: rgba(15, 23, 42, 0.8); border: 2px solid #38bdf8; border-radius: 16px; padding: 20px; font-size: 22px; text-align: center; margin-bottom: 16px; min-height: 90px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+    .options-grid { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .option-btn { background: rgba(30, 41, 59, 0.9); border: 2px solid #475569; border-radius: 12px; padding: 16px; font-size: 18px; font-weight: bold; color: #fff; cursor: pointer; transition: all 0.15s; text-align: center; display: flex; align-items: center; justify-content: center; min-height: 60px; }
+    .option-btn:hover { border-color: #38bdf8; background: #334155; }
+    .option-btn:active { transform: scale(0.98); }
+
+    /* Visual FX Overlay */
+    .fx-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 100; }
+    .attack-anim { position: absolute; font-size: 40px; animation: attackFly 0.5s ease-in forwards; }
+    @keyframes attackFly {
+      0% { left: 10%; opacity: 1; transform: scale(0.8); }
+      100% { left: 85%; opacity: 0; transform: scale(1.5); }
+    }
+    .shake { animation: shakeAnim 0.3s ease-in-out; }
+    @keyframes shakeAnim {
+      0%, 100% { transform: translate(0, 0); }
+      20%, 60% { transform: translate(-8px, 4px); }
+      40%, 80% { transform: translate(8px, -4px); }
+    }
+
+    /* Result Overlay */
+    .result-box { text-align: center; }
+    .result-title { font-size: 48px; font-weight: 900; margin-bottom: 12px; text-shadow: 0 0 20px currentColor; }
+    .win { color: #f59e0b; }
+    .lose { color: #ef4444; }
+
+    /* Disconnect Overlay */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); z-index: 8000; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; }
+    .overlay.active { display: flex; }
+  </style>
+</head>
+<body>
+
+  <div class="author-tag">康靖坤</div>
+
+  <!-- Portrait Orientation Warning -->
+  <div id="portrait-notice">
+    <div class="rotate-icon">↻</div>
+    <h2>請將手機橫向放置</h2>
+    <p style="color: #94a3b8; margin-top: 8px;">獲得最佳對戰戰鬥體驗</p>
+  </div>
+
+  <!-- 1. Home / Login Screen -->
+  <div id="screen-home" class="screen active">
+    <div class="card">
+      <h1>三角函數大對決</h1>
+      <p class="subtitle">高中數學 雙人即時線上競賽</p>
+      <input type="text" id="nickname-input" placeholder="請輸入玩家暱稱 (1-20字)" maxlength="20" autocomplete="off" />
+      <button class="btn" id="btn-enter">進入遊戲大廳</button>
+      <div class="status-badge">
+        <div class="dot" id="db-dot"></div>
+        <span id="db-status-text">連線至 Supabase 中...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Lobby Screen -->
+  <div id="screen-lobby" class="screen">
+    <div class="lobby-header">
+      <div>
+        <h2 style="font-size: 24px; color: #38bdf8;">遊戲大廳</h2>
+        <p style="color: #94a3b8; font-size: 14px;">玩家：<span id="lobby-player-name" style="color: #fff; font-weight: bold;"></span></p>
+      </div>
+      <button class="btn btn-sm" id="btn-create-room">+ 建立對戰房間</button>
+    </div>
+    <div class="room-list" id="room-container">
+      <!-- Live rooms will be populated here -->
+    </div>
+  </div>
+
+  <!-- 3. Waiting Room Screen -->
+  <div id="screen-waiting" class="screen">
+    <div class="card">
+      <h2 style="color: #38bdf8; font-size: 24px;">等待對手加入...</h2>
+      <div class="loader"></div>
+      <p style="color: #94a3b8; margin-bottom: 20px;">請勿關閉視窗，對手準備加入中</p>
+      <button class="btn btn-secondary btn-danger" id="btn-cancel-room">取消房間</button>
+    </div>
+  </div>
+
+  <!-- 4. Battle Screen -->
+  <div id="screen-battle" class="screen">
+    <div class="hud">
+      <div class="player-hud">
+        <div class="avatar" id="my-avatar">🐱</div>
+        <div class="player-meta">
+          <div class="player-name" id="my-name">我方玩家</div>
+          <div class="hp-bar"><div class="hp-fill" id="my-hp-bar"></div></div>
+        </div>
+      </div>
+      <div class="vs-badge">VS</div>
+      <div class="player-hud right">
+        <div class="avatar" id="op-avatar">🐶</div>
+        <div class="player-meta">
+          <div class="player-name" id="op-name">對手玩家</div>
+          <div class="hp-bar"><div class="hp-fill" id="op-hp-bar"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="battle-area" id="battle-area">
+      <div class="fx-layer" id="fx-layer"></div>
+      <div class="question-box" id="question-text">載入題目中...</div>
+      <div class="options-grid" id="options-container">
+        <!-- 4 Option Buttons -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Result Screen Overlay -->
+  <div id="screen-result" class="overlay">
+    <div class="card result-box">
+      <div class="result-title" id="result-title">勝利！</div>
+      <p style="color: #94a3b8; font-size: 18px; margin-bottom: 24px;" id="result-desc">你成功擊敗了對手！</p>
+      <button class="btn" id="btn-back-lobby">回到遊戲大廳</button>
+    </div>
+  </div>
+
+  <!-- 6. Disconnect Notice Overlay -->
+  <div id="screen-disconnect" class="overlay">
+    <div class="card">
+      <h2 style="color: #ef4444; margin-bottom: 12px;">對手已斷線</h2>
+      <p style="color: #94a3b8; margin-bottom: 24px;">對手已離開遊戲對戰或連線中斷。</p>
+      <button class="btn" id="btn-dc-back-lobby">回到遊戲大廳</button>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // Supabase Configuration
+    // ==========================================
+    const SUPABASE_URL = 'https://acgwdeiawqtnvtqazlpc.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_YfAd4qMEhWg2UaNTgFY3xw_PKDR3GE3';
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+    // ==========================================
+    // Client Token & State Management
+    // ==========================================
+    function getClientToken() {
+      let token = localStorage.getItem('sequence_battle_client_token');
+      if (!token) {
+        token = crypto.randomUUID();
+        localStorage.setItem('sequence_battle_client_token', token);
+      }
+      return token;
+    }
+
+    const clientToken = getClientToken();
+    let nickname = '';
+    let currentRoomId = null;
+    let currentSeat = null; // 1 or 2
+    let heartbeatTimer = null;
+    let disconnectTimer = null;
+    let opponentWasPresent = false;
+    let currentQuestion = null;
+    let lastHandledEventId = null;
+
+    let lobbyChannel = null;
+    let gameChannel = null;
+
+    const AVATARS = ['🐱', '🐶', '🐰', '🐻', '🦊', '🐼', '🐧', '🐸'];
+
+    // ==========================================
+    // Math Problem Generator (10th Grade Trigonometry)
+    // ==========================================
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateTrigQuestion() {
+      const types = ['special_angles', 'identity', 'rad_conversion', 'triangle_ratio'];
+      const type = types[getRandomInt(0, types.length - 1)];
+
+      let qText = '';
+      let correct = '';
+      let distractors = [];
+
+      if (type === 'special_angles') {
+        const angles = [
+          { deg: '30^\circ', sin: '1/2', cos: '\sqrt{3}/2', tan: '1/\sqrt{3}' },
+          { deg: '45^\circ', sin: '\sqrt{2}/2', cos: '\sqrt{2}/2', tan: '1' },
+          { deg: '60^\circ', sin: '\sqrt{3}/2', cos: '1/2', tan: '\sqrt{3}' }
+        ];
+        const item = angles[getRandomInt(0, angles.length - 1)];
+        const fn = ['sin', 'cos', 'tan'][getRandomInt(0, 2)];
+        qText = `求 $\\${fn}(${item.deg})$ 的值？`;
+        correct = item[fn];
+        
+        const pool = ['1/2', '\sqrt{3}/2', '\sqrt{2}/2', '1', '\sqrt{3}', '1/\sqrt{3}', '0', '2'];
+        distractors = pool.filter(x => x !== correct).sort(() => 0.5 - Math.random()).slice(0, 3);
+      } 
+      else if (type === 'identity') {
+        const theta = getRandomInt(10, 80);
+        const subType = getRandomInt(0, 1);
+        if (subType === 0) {
+          qText = `計算 $\\sin^2(${theta}^\\circ) + \\cos^2(${theta}^\\circ)$ 之值？`;
+          correct = '1';
+          distractors = ['0', '2', '\\sqrt{2}'];
+        } else {
+          qText = `若 $\\tan(${theta}^\\circ) = \\frac{\\sin(${theta}^\\circ)}{X}$，則 $X = ?$`;
+          correct = `\\cos(${theta}^\\circ)`;
+          distractors = [`\\sin(${theta}^\\circ)`, `\\tan(${theta}^\\circ)`, '1'];
+        }
+      } 
+      else if (type === 'rad_conversion') {
+        const pairs = [
+          { deg: '180^\circ', rad: '\\pi' },
+          { deg: '90^\circ', rad: '\\frac{\\pi}{2}' },
+          { deg: '60^\circ', rad: '\\frac{\\pi}{3}' },
+          { deg: '45^\circ', rad: '\\frac{\\pi}{4}' },
+          { deg: '30^\circ', rad: '\\frac{\\pi}{6}' }
+        ];
+        const item = pairs[getRandomInt(0, pairs.length - 1)];
+        qText = `將角度 $${item.deg}$ 化為弧度（靜度）？`;
+        correct = item.rad;
+        distractors = pairs.filter(p => p.rad !== correct).map(p => p.rad).slice(0, 3);
+      } 
+      else {
+        const a = getRandomInt(3, 8);
+        const b = getRandomInt(3, 8);
+        const c2 = a*a + b*b;
+        qText = `直角三角形兩股長為 $${a}$ 與 $${b}$，斜邊對角為 $\\theta$，求 $\\sin\\theta$ （提示：斜邊為 $\\sqrt{${c2}}$）？`;
+        correct = `\\frac{${a}}{\\sqrt{${c2}}}`;
+        distractors = [
+          `\\frac{${b}}{\\sqrt{${c2}}}`,
+          `\\frac{${a}}{${b}}`,
+          `\\frac{${b}}{${a}}`
+        ];
+      }
+
+      const options = [correct, ...distractors].sort(() => 0.5 - Math.random());
+
+      return {
+        question: qText,
+        options: options,
+        correct: correct
+      };
+    }
+
+    // ==========================================
+    // UI View Switching
+    // ==========================================
+    function switchScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    }
+
+    // Check Supabase Connectivity
+    async function checkDbConnection() {
+      try {
+        const { data, error } = await supabaseClient.rpc('list_live_rooms');
+        if (!error) {
+          document.getElementById('db-dot').style.background = '#22c55e';
+          document.getElementById('db-status-text').innerText = '資料庫已連接';
+        } else {
+          throw error;
+        }
+      } catch (err) {
+        document.getElementById('db-dot').style.background = '#ef4444';
+        document.getElementById('db-status-text').innerText = '連線異常，請重新整理';
+      }
+    }
+    checkDbConnection();
+
+    // ==========================================
+    // 1. Home Screen Logic
+    // ==========================================
+    document.getElementById('btn-enter').addEventListener('click', () => {
+      const val = document.getElementById('nickname-input').value.trim();
+      if (!val || val.length < 1 || val.length > 20) {
+        alert('請輸入 1 至 20 個字的暱稱');
+        return;
+      }
+      nickname = val;
+      document.getElementById('lobby-player-name').innerText = nickname;
+      switchScreen('screen-lobby');
+      initLobby();
+    });
+
+    // ==========================================
+    // 2. Lobby Logic
+    // ==========================================
+    async function fetchLobbyRooms() {
+      try {
+        const { data, error } = await supabaseClient.rpc('list_live_rooms');
+        if (error) throw error;
+        renderRoomList(data || []);
+      } catch (err) {
+        console.error('Fetch rooms error:', err);
+      }
+    }
+
+    function renderRoomList(rooms) {
+      const container = document.getElementById('room-container');
+      container.innerHTML = '';
+
+      if (rooms.length === 0) {
+        container.innerHTML = '<p style="color:#94a3b8; text-align:center; margin-top:40px;">目前沒有等待中的房間，快來建立一個吧！</p>';
+        return;
+      }
+
+      rooms.forEach(room => {
+        const card = document.createElement('div');
+        card.className = 'room-card';
+        card.innerHTML = `
+          <div class="room-info">
+            <div class="room-host">${escapeHtml(room.host_nickname)} 的對戰房</div>
+            <div class="room-status">狀態：等待玩家加入中...</div>
+          </div>
+          <button class="btn btn-sm" onclick="handleJoinProbe('${room.id}')">加入對戰</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function escapeHtml(text) {
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function initLobby() {
+      fetchLobbyRooms();
+      if (lobbyChannel) supabaseClient.removeChannel(lobbyChannel);
+
+      lobbyChannel = supabaseClient
+        .channel('public-rooms-lobby')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, () => {
+          fetchLobbyRooms();
+        })
+        .subscribe();
+    }
+
+    // ==========================================
+    // 3. Create & Cancel Room (Host)
+    // ==========================================
+    document.getElementById('btn-create-room').addEventListener('click', async () => {
+      try {
+        const { data, error } = await supabaseClient.rpc('create_room', {
+          p_nickname: nickname,
+          p_client_token: clientToken
+        });
+
+        if (error) throw error;
+
+        currentRoomId = data.room_id;
+        currentSeat = 1;
+
+        switchScreen('screen-waiting');
+        startHeartbeat();
+        listenAsHostWaiting();
+      } catch (err) {
+        alert('建立房間失敗：' + err.message);
+      }
+    });
+
+    function startHeartbeat() {
+      stopHeartbeat();
+      heartbeatTimer = setInterval(async () => {
+        if (currentRoomId && currentSeat === 1) {
+          await supabaseClient.rpc('heartbeat_room', {
+            p_room_id: currentRoomId,
+            p_client_token: clientToken
+          });
+        }
+      }, 3000);
+    }
+
+    function stopHeartbeat() {
+      if (heartbeatTimer) {
+        clearInterval(heartbeatTimer);
+        heartbeatTimer = null;
+      }
+    }
+
+    function listenAsHostWaiting() {
+      if (gameChannel) supabaseClient.removeChannel(gameChannel);
+
+      gameChannel = supabaseClient.channel(`game-${currentRoomId}`, {
+        config: { presence: { key: clientToken } }
+      });
+
+      // Handshake: Respond to join_probe with host_ack
+      gameChannel.on('broadcast', { event: 'join_probe' }, payload => {
+        if (payload.payload && payload.payload.probe_id) {
+          gameChannel.send({
+            type: 'broadcast',
+            event: 'host_ack',
+            payload: { probe_id: payload.payload.probe_id }
+          });
+        }
+      });
+
+      // Listen for game_state change to playing
+      gameChannel.on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'game_state',
+        filter: `room_id=eq.${currentRoomId}`
+      }, payload => {
+        if (payload.new.status === 'playing') {
+          stopHeartbeat();
+          startBattle(payload.new);
+        }
+      });
+
+      gameChannel.subscribe();
+    }
+
+    document.getElementById('btn-cancel-room').addEventListener('click', async () => {
+      if (currentRoomId && currentSeat === 1) {
+        await supabaseClient.rpc('cancel_room', {
+          p_room_id: currentRoomId,
+          p_client_token: clientToken
+        });
+      }
+      cleanUpAndReturnLobby();
+    });
+
+    // Pagehide keepalive cleanup
+    window.addEventListener('pagehide', () => {
+      if (currentRoomId && currentSeat === 1) {
+        const payload = JSON.stringify({ p_room_id: currentRoomId, p_client_token: clientToken });
+        navigator.sendBeacon(`${SUPABASE_URL}/rest/v1/rpc/cancel_room`, payload);
+      }
+    });
+
+    // ==========================================
+    // 4. Join Room Probe & Handshake
+    // ==========================================
+    async function handleJoinProbe(roomId) {
+      const probeId = crypto.randomUUID();
+      let ackReceived = false;
+
+      const tempChannel = supabaseClient.channel(`game-${roomId}`);
+
+      tempChannel.on('broadcast', { event: 'host_ack' }, payload => {
+        if (payload.payload && payload.payload.probe_id === probeId) {
+          ackReceived = true;
+        }
+      });
+
+      tempChannel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await tempChannel.send({
+            type: 'broadcast',
+            event: 'join_probe',
+            payload: { probe_id: probeId }
+          });
+        }
+      });
+
+      // Wait 2000ms for Host ACK
+      setTimeout(async () => {
+        supabaseClient.removeChannel(tempChannel);
+        if (ackReceived) {
+          executeJoinRoom(roomId);
+        } else {
+          alert('房主已離開，請選其他房間。');
+          fetchLobbyRooms();
+        }
+      }, 2000);
+    }
+
+    async function executeJoinRoom(roomId) {
+      try {
+        const { data, error } = await supabaseClient.rpc('join_room', {
+          p_room_id: roomId,
+          p_nickname: nickname,
+          p_client_token: clientToken
+        });
+
+        if (error) {
+          if (error.message.includes('HOST_OFFLINE')) {
+            alert('房主已離線，請選擇其他房間');
+          } else {
+            alert('加入失敗：' + error.message);
+          }
+          fetchLobbyRooms();
+          return;
+        }
+
+        currentRoomId = roomId;
+        currentSeat = 2;
+
+        // Fetch latest game state to start battle
+        const { data: gsData } = await supabaseClient
+          .from('game_state')
+          .select('*')
+          .eq('room_id', currentRoomId)
+          .single();
+
+        startBattle(gsData);
+      } catch (err) {
+        alert('加入對戰發生錯誤：' + err.message);
+      }
+    }
+
+    // ==========================================
+    // 5. Battle & Presence Engine
+    // ==========================================
+    function getDeterministicAvatars(seed) {
+      let num = 0;
+      for (let i = 0; i < seed.length; i++) num += seed.charCodeAt(i);
+      const idx1 = num % AVATARS.length;
+      const idx2 = (num + 3) % AVATARS.length;
+      return [AVATARS[idx1], AVATARS[idx2]];
+    }
+
+    function startBattle(initialGameState) {
+      switchScreen('screen-battle');
+      stopHeartbeat();
+
+      opponentWasPresent = false;
+      lastHandledEventId = null;
+
+      // Assign Avatars deterministically
+      const [av1, av2] = getDeterministicAvatars(currentRoomId);
+      if (currentSeat === 1) {
+        document.getElementById('my-avatar').innerText = av1;
+        document.getElementById('op-avatar').innerText = av2;
+        document.getElementById('my-name').innerText = initialGameState.player1_name || nickname;
+        document.getElementById('op-name').innerText = initialGameState.player2_name || '對手';
+      } else {
+        document.getElementById('my-avatar').innerText = av2;
+        document.getElementById('op-avatar').innerText = av1;
+        document.getElementById('my-name').innerText = initialGameState.player2_name || nickname;
+        document.getElementById('op-name').innerText = initialGameState.player1_name || '對手';
+      }
+
+      updateGameStateUI(initialGameState);
+      nextQuestion();
+      setupGameChannelAndPresence();
+    }
+
+    function setupGameChannelAndPresence() {
+      if (gameChannel) supabaseClient.removeChannel(gameChannel);
+
+      gameChannel = supabaseClient.channel(`game-${currentRoomId}`, {
+        config: { presence: { key: clientToken } }
+      });
+
+      // Presence Sync & Opponent Disconnect Grace Period
+      gameChannel.on('presence', { event: 'sync' }, () => {
+        const state = gameChannel.presenceState();
+        const tokens = Object.keys(state);
+        
+        // Find if opponent seat is present
+        let opFound = false;
+        tokens.forEach(tok => {
+          const presences = state[tok];
+          presences.forEach(p => {
+            if (p.seat && p.seat !== currentSeat) opFound = true;
+          });
+        });
+
+        if (opFound) {
+          opponentWasPresent = true;
+          if (disconnectTimer) {
+            clearTimeout(disconnectTimer);
+            disconnectTimer = null;
+          }
+        } else if (opponentWasPresent && !disconnectTimer) {
+          // 5-second Grace Period
+          disconnectTimer = setTimeout(() => {
+            document.getElementById('screen-disconnect').classList.add('active');
+          }, 5000);
+        }
+      });
+
+      // Listen for game_state updates
+      gameChannel.on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'game_state',
+        filter: `room_id=eq.${currentRoomId}`
+      }, payload => {
+        updateGameStateUI(payload.new);
+      });
+
+      gameChannel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await gameChannel.track({
+            seat: currentSeat,
+            nickname: nickname
+          });
+        }
+      });
+    }
+
+    function updateGameStateUI(gs) {
+      if (!gs) return;
+
+      const myHp = currentSeat === 1 ? gs.player1_hp : gs.player2_hp;
+      const opHp = currentSeat === 1 ? gs.player2_hp : gs.player1_hp;
+
+      document.getElementById('my-hp-bar').style.width = `${(myHp / 7) * 100}%`;
+      document.getElementById('op-hp-bar').style.width = `${(opHp / 7) * 100}%`;
+
+      // Trigger FX Animation if event is new
+      if (gs.last_event_id && gs.last_event_id !== lastHandledEventId) {
+        lastHandledEventId = gs.last_event_id;
+        triggerEventAnimation(gs.last_event_type, gs.last_event_seat);
+      }
+
+      // Check Game Over
+      if (gs.status === 'finished') {
+        showResultScreen(gs.winner_seat === currentSeat);
+      }
+    }
+
+    // ==========================================
+    // 6. Question Engine & Answer Submission
+    // ==========================================
+    function nextQuestion() {
+      currentQuestion = generateTrigQuestion();
+      document.getElementById('question-text').innerHTML = currentQuestion.question;
+
+      const grid = document.getElementById('options-container');
+      grid.innerHTML = '';
+
+      currentQuestion.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerHTML = `$${opt}$`;
+        btn.onclick = () => submitAnswer(opt === currentQuestion.correct, btn);
+        grid.appendChild(btn);
+      });
+
+      if (window.MathJax) {
+        MathJax.typesetPromise();
+      }
+    }
+
+    async function submitAnswer(isCorrect, btnEl) {
+      // Temporary UI Highlight
+      btnEl.style.borderColor = isCorrect ? '#22c55e' : '#ef4444';
+      btnEl.style.background = isCorrect ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+
+      try {
+        await supabaseClient.rpc('resolve_answer', {
+          p_room_id: currentRoomId,
+          p_client_token: clientToken,
+          p_is_correct: isCorrect
+        });
+      } catch (err) {
+        console.error('Resolve answer error:', err);
+      }
+
+      // Load next question shortly
+      setTimeout(() => {
+        nextQuestion();
+      }, 400);
+    }
+
+    // Visual Animations
+    function triggerEventAnimation(type, sourceSeat) {
+      const fxLayer = document.getElementById('fx-layer');
+      const isMyAction = sourceSeat === currentSeat;
+
+      if (type === 'hit') {
+        if (isMyAction) {
+          const anim = document.createElement('div');
+          anim.className = 'attack-anim';
+          anim.innerText = '⚡';
+          fxLayer.appendChild(anim);
+          setTimeout(() => anim.remove(), 500);
+        } else {
+          const battleArea = document.getElementById('battle-area');
+          battleArea.classList.add('shake');
+          setTimeout(() => battleArea.classList.remove('shake'), 300);
+        }
+      } else if (type === 'self_hit' && !isMyAction) {
+        // Opponent hit themselves
+      }
+    }
+
+    // ==========================================
+    // 7. Victory / Result & Clean Up
+    // ==========================================
+    function showResultScreen(isWinner) {
+      const resOverlay = document.getElementById('screen-result');
+      const title = document.getElementById('result-title');
+      const desc = document.getElementById('result-desc');
+
+      if (isWinner) {
+        title.innerText = '勝利！';
+        title.className = 'result-title win';
+        desc.innerText = '太棒了！你的三角函數運算神速！';
+      } else {
+        title.innerText = '敗北';
+        title.className = 'result-title lose';
+        desc.innerText = '再接再厲！熟悉公式後下次一定贏！';
+      }
+      resOverlay.classList.add('active');
+    }
+
+    document.getElementById('btn-back-lobby').addEventListener('click', cleanUpAndReturnLobby);
+    document.getElementById('btn-dc-back-lobby').addEventListener('click', cleanUpAndReturnLobby);
+
+    function cleanUpAndReturnLobby() {
+      stopHeartbeat();
+      if (disconnectTimer) clearTimeout(disconnectTimer);
+
+      if (gameChannel) {
+        supabaseClient.removeChannel(gameChannel);
+        gameChannel = null;
+      }
+
+      currentRoomId = null;
+      currentSeat = null;
+
+      document.getElementById('screen-result').classList.remove('active');
+      document.getElementById('screen-disconnect').classList.remove('active');
+
+      switchScreen('screen-lobby');
+      initLobby();
+    }
+  </script>
+</body>
+</html>
